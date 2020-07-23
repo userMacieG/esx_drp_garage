@@ -1,1 +1,3 @@
-ALTER TABLE `owned_vehicles` ADD `state` BOOLEAN NOT NULL DEFAULT FALSE AFTER `owner`;
+USE `es_extended`;
+
+ALTER TABLE `owned_vehicles` ADD `inpounded` BOOLEAN NOT NULL AFTER `stored`;
