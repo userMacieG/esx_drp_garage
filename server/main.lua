@@ -1,14 +1,6 @@
-RegisterServerEvent('eden_garage:debug')
-RegisterServerEvent('eden_garage:deletevehicle_sv')
-RegisterServerEvent('eden_garage:modifystate')
-RegisterServerEvent('eden_garage:pay')
-RegisterServerEvent('eden_garage:payhealth')
-RegisterServerEvent('eden_garage:logging')
 ESX = nil
 
-TriggerEvent('esx:getSharedObject', function(obj)
-    ESX = obj
-end)
+TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
 -- Vehicle fetch
 ESX.RegisterServerCallback('eden_garage:getVehicles', function(source, cb)
@@ -16,9 +8,10 @@ ESX.RegisterServerCallback('eden_garage:getVehicles', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(_source)
     local vehicules = {}
 
-    MySQL.Async.fetchAll('SELECT * FROM owned_vehicles WHERE owner=@identifier', {
-        ['@identifier'] = xPlayer.getIdentifier()
-    }, function(data)
+    MySQL.Async.fetchAll("SELECT * FROM owned_vehicles WHERE owner = @identifier AND type = @type", {
+		['@identifier'] = xPlayer.getIdentifier(),
+		['@type'] = 'car'
+	}, function(data) 
         for _, v in pairs(data) do
             local vehicle = json.decode(v.vehicle)
 
@@ -41,7 +34,6 @@ ESX.RegisterServerCallback('eden_garage:stockv', function(source, cb, vehiclePro
     local xPlayer = ESX.GetPlayerFromId(_source)
     local vehicules = getPlayerVehicles(xPlayer.getIdentifier())
     local plate = vehicleProps.plate
-    print(plate)
 
     for _, v in pairs(vehicules) do
         if (plate == plate) then
@@ -60,27 +52,23 @@ ESX.RegisterServerCallback('eden_garage:stockv', function(source, cb, vehiclePro
     cb(isFound)
 end)
 
+RegisterServerEvent('eden_garage:deletevehicle_sv')
 AddEventHandler('eden_garage:deletevehicle_sv', function(vehicle)
-    TriggerClientEvent('eden_garage:deletevehicle_cl', -1, vehicle)
+	TriggerClientEvent('eden_garage:deletevehicle_cl', -1, vehicle)
 end)
 
 -- End vehicle store
 -- Change state of vehicle
+RegisterServerEvent('eden_garage:modifystate')
 AddEventHandler('eden_garage:modifystate', function(vehicle, state)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
     local vehicules = getPlayerVehicles(xPlayer.getIdentifier())
     local state = state
     local plate = vehicle.plate
-    print('UPDATING STATE...')
 
     if plate ~= nil then
-        print('plate')
         plate = plate:gsub('^%s*(.-)%s*$', '%1')
-        print(plate)
-    else
-        print('vehicle')
-        print(vehicle)
     end
 
     for _, v in pairs(vehicules) do
@@ -89,8 +77,6 @@ AddEventHandler('eden_garage:modifystate', function(vehicle, state)
                 ['@state'] = state,
                 ['@plate'] = plate
             })
-
-            print('STATE UPDATED...')
             break
         end
     end
@@ -130,6 +116,7 @@ end)
 
 -- End funds check
 -- Withdraw money
+RegisterServerEvent('eden_garage:pay')
 AddEventHandler('eden_garage:pay', function()
     local xPlayer = ESX.GetPlayerFromId(source)
     xPlayer.removeMoney(Config.Price)
@@ -159,6 +146,7 @@ end
 
 -- End fetch vehicles
 -- Debug
+RegisterServerEvent('eden_garage:debug')
 AddEventHandler('eden_garage:debug', function(var)
     print(to_string(var))
 end)
@@ -207,17 +195,16 @@ end
 -- End debug
 -- Return all vehicles to garage (state update) on server restart
 AddEventHandler('onMySQLReady', function()
-    MySQL.Sync.execute('UPDATE owned_vehicles SET state=true WHERE state=false', {})
+    MySQL.Sync.execute("UPDATE owned_vehicles SET stored = true WHERE stored = false AND inpounded = false", {})
 end)
 
 -- End vehicle return
 -- Pay vehicle repair cost
+RegisterServerEvent('eden_garage:payhealth')
 AddEventHandler('eden_garage:payhealth', function(price)
     local xPlayer = ESX.GetPlayerFromId(source)
 
-    if price < 0 then
-        print('CHEATER?')
-    else
+    if price > 0 then
         xPlayer.removeMoney(price)
         TriggerClientEvent('esx:showNotification', source, _U('you_paid', price))
     end
@@ -225,6 +212,7 @@ end)
 
 -- End repair cost
 -- Log to the console
+RegisterServerEvent('eden_garage:logging')
 AddEventHandler('eden_garage:logging', function(logging)
     RconPrint(logging)
 end)
