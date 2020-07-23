@@ -103,10 +103,15 @@ function ListVehiclesMenu()
             local vehicleName = GetDisplayNameFromVehicleModel(hashVehicule)
             local labelvehicle
 
-            if (v.state) then
+			print(v.stored)
+			print(v.inpounded)
+
+            if (v.stored) then
                 labelvehicle = _U('status_in_garage', GetLabelText(vehicleName))
-            else
+            elseif (v.inpounded) then
                 labelvehicle = _U('status_impounded', GetLabelText(vehicleName))
+            else
+                labelvehicle = _U('status_out_garage', GetLabelText(vehicleName))
             end
 
             table.insert(elements, {
@@ -120,10 +125,17 @@ function ListVehiclesMenu()
             align =  'bottom-right',
             elements = elements
         }, function(data, menu)
-            if (data.current.value.state) then
+            if (data.current.value.stored) then
                 menu.close()
                 SpawnVehicle(data.current.value.vehicle)
-            else
+            elseif (data.current.value.stored) then
+				exports.pNotify:SendNotification({
+					text = _U('notif_car_out'),
+					type = "success",
+					timeout = 1500,
+					layout = "centerLeft"
+				})
+			else
 				exports.pNotify:SendNotification({
 					text = _U('notif_car_impounded'),
 					type = "success",
@@ -187,7 +199,7 @@ end)
 
 function ranger(vehicle, vehicleProps)
     TriggerServerEvent('eden_garage:deletevehicle_sv', vehicleProps.plate)
-    TriggerServerEvent('eden_garage:modifystate', vehicleProps, true)
+    TriggerServerEvent('eden_garage:modifystate', vehicleProps, true, false)
 
 	exports.pNotify:SendNotification({
 		text = _U('ranger'),
@@ -268,7 +280,7 @@ function SpawnVehicle(vehicle)
         TaskWarpPedIntoVehicle(PlayerPedId(), callback_vehicle, -1)
     end)
 
-    TriggerServerEvent('eden_garage:modifystate', vehicle, false)
+    TriggerServerEvent('eden_garage:modifystate', vehicle, false, false)
 end
 
 -- Function for spawning vehicle
@@ -283,10 +295,10 @@ function SpawnPoundedVehicle(vehicle)
 		TaskWarpPedIntoVehicle(PlayerPedId(), callback_vehicle, -1)
     end)
 
-    TriggerServerEvent('eden_garage:modifystate', vehicle, true)
+    TriggerServerEvent('eden_garage:modifystate', vehicle, true, false)
 
     ESX.SetTimeout(10000, function()
-        TriggerServerEvent('eden_garage:modifystate', vehicle, false)
+        TriggerServerEvent('eden_garage:modifystate', vehicle, false, false)
     end)
 end
 
